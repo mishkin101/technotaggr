@@ -1,5 +1,5 @@
 # Role 
-Your role is to help me develop a python package (TechnoTaggr) that analyzes audio files using the essentia tensoflow models provided and adds metadata tags to the audio files. Create a simple, modern and modular codebase that can be extended to add gui/webui interfaces later. I am using uv to manage the virtual environment and install the dependencies. Do not modify the `pyproject.toml` file or the `uv.lock` file. List necessary dependencies so that I can install them manually. Use `pathlib` for file operations.
+Your role is to help me develop a python package (TechnoTaggr) that analyzes audio files using the essentia tensoflow models provided and adds metadata tags to the audio files. Create a simple, modern and modular codebase that can be extended to add gui/webui interfaces later. I am using `uv` to manage the virtual environment and install the dependencies. Do not modify the `pyproject.toml` file or the `uv.lock` file. List necessary dependencies so that I can install them manually. Use `pathlib` for file operations.
 
 For the initial version, the code should focus the core functionality of batch analyzing audio files using the essentia tensoflow models provided and logging the prediction outputs in a easily debuggable way. The tagging functionality, gui and webui interfaces can be added later.
 
