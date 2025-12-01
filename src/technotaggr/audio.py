@@ -6,9 +6,13 @@ import logging
 from pathlib import Path
 
 import numpy as np
+import essentia
 from essentia.standard import MonoLoader
 
 from .config import DEFAULT_RESAMPLE_QUALITY, SUPPORTED_FORMATS
+
+# Suppress essentia warning messages
+essentia.EssentiaLogger().warningActive = False
 
 logger = logging.getLogger(__name__)
 

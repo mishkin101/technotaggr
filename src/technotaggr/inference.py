@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import essentia
 from essentia.standard import (
     TensorflowPredict2D,
     TensorflowPredictEffnetDiscogs,
@@ -15,6 +16,9 @@ from essentia.standard import (
 )
 
 from .audio import get_audio_duration, load_audio
+
+# Suppress essentia warning messages
+essentia.EssentiaLogger().warningActive = False
 from .model_loader import ClassifierConfig, EmbeddingModelConfig
 
 logger = logging.getLogger(__name__)
