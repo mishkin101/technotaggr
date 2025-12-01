@@ -1,0 +1,64 @@
+{
+    "name": "fs_loop_ds",
+    "type": "Loop role classifier (single-class)",
+    "link": "https://essentia.upf.edu/models/classification-heads/fs_loop_ds/fs_loop_ds-msd-musicnn-1.pb",
+    "version": "1",
+    "description": "classification of music loops according to its role",
+    "author": "Pablo Alonso",
+    "email": "pablo.alonso@upf.edu",
+    "release_date": "2023-04-27",
+    "framework": "tensorflow",
+    "framework_version": "2.8.0",
+    "classes": [
+        "bass",
+        "chords",
+        "fx",
+        "melody",
+        "percussion"
+    ],
+    "model_types": [
+        "frozen_model"
+    ],
+    "dataset": {
+        "name": "Freesound Loop Dataset",
+        "link": "https://doi.org/10.5281/zenodo.3967852",
+        "size": "9455 (2104 single role loops used)",
+        "metrics": {
+            "5-fold_cross_validation_normalized_accuracy": 0.56
+        }
+    },
+    "schema": {
+        "inputs": [
+            {
+                "name": "serving_default_model_Placeholder",
+                "type": "float",
+                "shape": [
+                    "batch_size",
+                    200
+                ]
+            }
+        ],
+        "outputs": [
+            {
+                "name": "PartitionedCall",
+                "type": "float",
+                "shape": [
+                    "batch_size",
+                    5
+                ],
+                "op": "Softmax",
+                "output_purpose": "predictions"
+            }
+        ]
+    },
+    "inference": {
+        "sample_rate": 16000,
+        "algorithm": "TensorflowPredict2D",
+        "embedding_model": {
+            "algorithm": "TensorflowPredictMusiCNN",
+            "model_name": "msd-musicnn-1",
+            "link": "https://essentia.upf.edu/models/feature-extractors/musicnn/msd-musicnn-1.pb"
+        }
+    },
+    "citation": "@article{alonso2020deep,\ntitle={Deep embeddings with Essentia models},\nauthor={Alonso-Jim{\\'e}nez, Pablo and Bogdanov, Dmitry and Serra, Xavier},\nbooktitle={International Society for Music Information Retrieval Conference (ISMIR'20) Late-Braeking/Demo},\nyear={2020}\n}"
+}
