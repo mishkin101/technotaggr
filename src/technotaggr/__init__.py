@@ -31,6 +31,11 @@ from .model_loader import (
     discover_classifiers,
     load_classifier_config,
 )
+from .postprocessing import (
+    calculate_phrase_duration,
+    estimate_bpm,
+    postprocess_results,
+)
 from .result_logger import ResultLogger, SessionResults
 
 __version__ = "0.1.0"
@@ -57,6 +62,10 @@ __all__ = [
     # Result Logging
     "ResultLogger",
     "SessionResults",
+    # Post-processing
+    "estimate_bpm",
+    "calculate_phrase_duration",
+    "postprocess_results",
     # CLI
     "main",
 ]

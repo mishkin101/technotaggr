@@ -1,6 +1,6 @@
 {
-  "session_timestamp": "2025-12-01T00:43:58.791865",
-  "input_directory": "song_data/smol",
+  "session_timestamp": "2025-12-01T12:46:48.567189",
+  "input_directory": "/Users/mishkin/Desktop/gitclones/technotaggr/song_data/smol",
   "output_directory": "/Users/mishkin/Desktop/gitclones/technotaggr/technotaggr_results",
   "total_files": 3,
   "successful_files": 3,
@@ -17,7 +17,7 @@
   ],
   "results": [
     {
-      "audio_file": "song_data/smol/01 Power to the Soul.aiff",
+      "audio_file": "/Users/mishkin/Desktop/gitclones/technotaggr/song_data/smol/01 Power to the Soul.aiff",
       "audio_duration_seconds": 396.0,
       "sample_rate": 16000,
       "models": [
@@ -14835,7 +14835,7 @@
       "phrase_duration_seconds": 26.749
     },
     {
-      "audio_file": "song_data/smol/1-01 Funken.aiff",
+      "audio_file": "/Users/mishkin/Desktop/gitclones/technotaggr/song_data/smol/1-01 Funken.aiff",
       "audio_duration_seconds": 296.125,
       "sample_rate": 16000,
       "models": [
@@ -25951,7 +25951,7 @@
       "phrase_duration_seconds": 26.749
     },
     {
-      "audio_file": "song_data/smol/29 - BT Premiere： CSP - Funk [ASWVA001].mp3",
+      "audio_file": "/Users/mishkin/Desktop/gitclones/technotaggr/song_data/smol/29 - BT Premiere： CSP - Funk [ASWVA001].mp3",
       "audio_duration_seconds": 325.946,
       "sample_rate": 16000,
       "models": [

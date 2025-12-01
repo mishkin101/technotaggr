@@ -11,6 +11,7 @@ from .audio import discover_audio_files
 from .config import DEFAULT_MODELS_DIR, DEFAULT_OUTPUT_DIR
 from .inference import InferencePipeline
 from .model_loader import discover_classifiers
+from .postprocessing import postprocess_results
 from .result_logger import ResultLogger
 
 
@@ -45,21 +46,30 @@ def create_parser() -> argparse.ArgumentParser:
         prog="technotaggr",
         description="Analyze audio files using Essentia TensorFlow models.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # Analyze subcommand
+    analyze_parser = subparsers.add_parser(
+        "analyze",
+        help="Analyze audio files and generate predictions",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s /path/to/music
-  %(prog)s /path/to/music --output-dir ./results
-  %(prog)s /path/to/music -v --recursive
+  technotaggr analyze /path/to/music
+  technotaggr analyze /path/to/music --output-dir ./results
+  technotaggr analyze /path/to/music -v --recursive
         """,
     )
 
-    parser.add_argument(
+    analyze_parser.add_argument(
         "input_dir",
         type=Path,
         help="Directory containing audio files to analyze",
     )
 
-    parser.add_argument(
+    analyze_parser.add_argument(
         "--output-dir",
         "-o",
         type=Path,
@@ -67,7 +77,7 @@ Examples:
         help=f"Directory for output files (default: {DEFAULT_OUTPUT_DIR})",
     )
 
-    parser.add_argument(
+    analyze_parser.add_argument(
         "--models-dir",
         "-m",
         type=Path,
@@ -75,24 +85,66 @@ Examples:
         help="Directory containing model files (default: package models)",
     )
 
-    parser.add_argument(
+    analyze_parser.add_argument(
         "--recursive",
         "-r",
         action="store_true",
         help="Search for audio files recursively in subdirectories",
     )
 
-    parser.add_argument(
+    analyze_parser.add_argument(
         "--verbose",
         "-v",
         action="store_true",
         help="Enable verbose (debug) logging",
     )
 
-    parser.add_argument(
+    analyze_parser.add_argument(
         "--no-summary",
         action="store_true",
         help="Don't print summary to console after processing",
+    )
+
+    # Postprocess subcommand
+    postprocess_parser = subparsers.add_parser(
+        "postprocess",
+        help="Add 16-bar phrase predictions to existing results",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  technotaggr postprocess results.json
+  technotaggr postprocess results.json --output processed_results.json
+  technotaggr postprocess results.json --audio-base-path /path/to/music
+        """,
+    )
+
+    postprocess_parser.add_argument(
+        "json_file",
+        type=Path,
+        help="Path to the results JSON file to post-process",
+    )
+
+    postprocess_parser.add_argument(
+        "--output",
+        "-o",
+        type=Path,
+        default=None,
+        help="Output path for processed results (default: overwrite input)",
+    )
+
+    postprocess_parser.add_argument(
+        "--audio-base-path",
+        "-a",
+        type=Path,
+        default=None,
+        help="Base path to resolve relative audio file paths (default: cwd)",
+    )
+
+    postprocess_parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Enable verbose (debug) logging",
     )
 
     return parser
@@ -103,8 +155,8 @@ def progress_callback(current: int, total: int, path: Path) -> None:
     print(f"[{current}/{total}] Processing: {path.name}")
 
 
-def run_cli(args: argparse.Namespace) -> int:
-    """Run the CLI with parsed arguments.
+def run_analyze(args: argparse.Namespace) -> int:
+    """Run the analyze command.
 
     Args:
         args: Parsed command-line arguments.
@@ -112,8 +164,6 @@ def run_cli(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 for success, non-zero for errors).
     """
-    # Setup logging
-    setup_logging(args.verbose)
     logger = logging.getLogger(__name__)
 
     # Validate input directory
@@ -190,6 +240,71 @@ def run_cli(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_postprocess(args: argparse.Namespace) -> int:
+    """Run the postprocess command.
+
+    Args:
+        args: Parsed command-line arguments.
+
+    Returns:
+        Exit code (0 for success, non-zero for errors).
+    """
+    logger = logging.getLogger(__name__)
+
+    # Validate input file
+    if not args.json_file.exists():
+        logger.error(f"JSON file does not exist: {args.json_file}")
+        return 1
+
+    if not args.json_file.is_file():
+        logger.error(f"Path is not a file: {args.json_file}")
+        return 1
+
+    print(f"Post-processing: {args.json_file}")
+    print("-" * 40)
+
+    try:
+        output_path = postprocess_results(
+            json_path=args.json_file,
+            output_path=args.output,
+            audio_base_path=args.audio_base_path,
+        )
+        print("-" * 40)
+        print(f"\nResults saved to: {output_path}")
+        return 0
+    except Exception as e:
+        logger.error(f"Post-processing failed: {e}")
+        return 1
+
+
+def run_cli(args: argparse.Namespace) -> int:
+    """Run the CLI with parsed arguments.
+
+    Args:
+        args: Parsed command-line arguments.
+
+    Returns:
+        Exit code (0 for success, non-zero for errors).
+    """
+    # Setup logging
+    verbose = getattr(args, "verbose", False)
+    setup_logging(verbose)
+
+    # Route to appropriate command
+    if args.command == "analyze":
+        return run_analyze(args)
+    elif args.command == "postprocess":
+        return run_postprocess(args)
+    else:
+        # No command specified - show help
+        print("Usage: technotaggr <command> [options]")
+        print("\nCommands:")
+        print("  analyze      Analyze audio files and generate predictions")
+        print("  postprocess  Add 16-bar phrase predictions to existing results")
+        print("\nRun 'technotaggr <command> --help' for more information.")
+        return 0
+
+
 def main() -> None:
     """Main entry point for the CLI."""
     parser = create_parser()
@@ -209,4 +324,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
