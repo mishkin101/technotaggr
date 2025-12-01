@@ -80,6 +80,18 @@ For post-processing, you will need to aggregate the `segment_predictions` for ea
 - For every audio file, use librosa to calculate the BPM of the song.
 - for steps 1-4, You should do this for every model and for every audio file.
 
+### 'segment_predictions' duration logic:
+
+### Input Embedding Shape Logic
+A `patch_size` of 64 is 1 second.  All embedding model in Essentia uses the `TensorflowInputMusiCNN` internally to calculate the input shape for the mel-spectrogram used as an input for the embedding model function.
+
+For the embedding models found in `technotaggr/src/technotaggr/models/feature-extractors`, the `patch_size` corresponds to the `inputs` schema for the `shape` field in one of the list indices.
+
+- `model/Placeholder` in the `inputs` schema from `technotaggr/src/technotaggr/models/feature-extractors/musicnn/msd-musicnn-1/msd-musicnn-1.json`  corresponds to a 3 second interval of audio using a (time, features) `shape` of [187, 96] where `patch_size` = 187 (the first index of the `shape` list).
+
+- `serving_default_melspectrogram` in the `inputs` schema from `technotaggr/src/technotaggr/models/feature-extractors/discogs-effnet/discogs-effnet-bs64-1/discogs-effnet-bs64-1.json`  corresponds to a 2 second interval of audio using a (batch size, time, features) `shape` of [64, 128, 96] where `patch_size` = 128 (the second index of the `shape` list).
+
+
 1. For every song: calculate the duration (in seconds) of a 16-bar musical phrase using the BPM of the song according to the formula:
 
 duration = 16 bars * 4 beats per bar * (60 seconds per minute / BPM)

@@ -12,6 +12,70 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+# Essentia uses TensorflowInputMusiCNN internally with a base patch_size of 64 = 1 second
+PATCHES_PER_SECOND = 64
+
+
+def get_embedding_model_segment_duration(embedding_model_path: str) -> float:
+    """Get the segment duration in seconds from an embedding model's JSON config.
+
+    The patch_size from the model's input schema determines the segment duration.
+    A patch_size of 64 corresponds to 1 second of audio.
+
+    Args:
+        embedding_model_path: Path to the embedding model .pb file.
+
+    Returns:
+        Segment duration in seconds.
+    """
+    model_path = Path(embedding_model_path)
+
+    # The JSON config is at the parent level with the model name
+    # e.g., .../musicnn/msd-musicnn-1/msd-musicnn-1.pb -> .../musicnn/msd-musicnn-1.json
+    model_name = model_path.stem  # e.g., "msd-musicnn-1"
+    json_path = model_path.parent.parent / f"{model_name}.json"
+
+    if not json_path.exists():
+        logger.warning(
+            f"Embedding model JSON not found: {json_path}. "
+            "Using fallback segment duration calculation."
+        )
+        return None
+
+    try:
+        with open(json_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+
+        # Get the input shape from the schema
+        inputs = config.get("schema", {}).get("inputs", [])
+        if not inputs:
+            logger.warning(f"No inputs found in embedding model schema: {json_path}")
+            return None
+
+        shape = inputs[0].get("shape", [])
+
+        # Determine patch_size based on shape dimensions:
+        # - 2D shape [time, features]: patch_size is shape[0] (e.g., MusiCNN: [187, 96])
+        # - 3D shape [batch, time, features]: patch_size is shape[1] (e.g., EffNet: [64, 128, 96])
+        if len(shape) == 2:
+            patch_size = shape[0]
+        elif len(shape) == 3:
+            patch_size = shape[1]
+        else:
+            logger.warning(f"Unexpected input shape dimensions: {shape}")
+            return None
+
+        segment_duration = patch_size / PATCHES_PER_SECOND
+        logger.debug(
+            f"Embedding model {model_name}: patch_size={patch_size}, "
+            f"segment_duration={segment_duration:.3f}s"
+        )
+        return segment_duration
+
+    except Exception as e:
+        logger.warning(f"Failed to read embedding model config {json_path}: {e}")
+        return None
+
 
 def estimate_bpm(audio_path: Path) -> float:
     """Estimate BPM of an audio file using librosa.
@@ -156,26 +220,34 @@ def postprocess_audio_result(
     result["bpm"] = round(bpm, 2)
     result["phrase_duration_seconds"] = round(phrase_duration, 3)
 
-    # Get audio duration and calculate segment duration
-    audio_duration = result["audio_duration_seconds"]
-
     # Process each model's predictions
     for model in result.get("models", []):
         num_segments = model.get("num_segments", 0)
         segment_predictions = model.get("segment_predictions", [])
         classes = model.get("classes", [])
+        embedding_model_path = model.get("embedding_model_path", "")
 
         if num_segments == 0 or not segment_predictions:
             continue
 
-        # Calculate segment duration and segments per phrase
-        segment_duration = audio_duration / num_segments
+        # Calculate segment duration from embedding model's patch_size
+        segment_duration = get_embedding_model_segment_duration(embedding_model_path)
+
+        if segment_duration is None:
+            # Fallback: estimate from audio duration / num_segments
+            audio_duration = result["audio_duration_seconds"]
+            segment_duration = audio_duration / num_segments
+            logger.warning(
+                f"Using fallback segment duration for {model['model_name']}: "
+                f"{segment_duration:.3f}s"
+            )
+
         segments_per_phrase = phrase_duration / segment_duration
 
         logger.debug(
             f"Model {model['model_name']}: "
             f"{num_segments} segments, "
-            f"{segment_duration:.2f}s per segment, "
+            f"{segment_duration:.3f}s per segment, "
             f"{segments_per_phrase:.1f} segments per 16-bar phrase"
         )
 
