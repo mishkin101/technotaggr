@@ -73,9 +73,8 @@ def _load_embedding_model_config(
         logger.warning(f"Unknown embedding algorithm: {algorithm}")
         return None
 
-    # Find the model directory
-    model_dir = arch_dir / model_name
-    json_path = model_dir / f"{model_name}.json"
+    # Find the model files directly in the architecture directory
+    json_path = arch_dir / f"{model_name}.json"
 
     if not json_path.exists():
         logger.warning(f"Embedding model JSON not found: {json_path}")
@@ -101,7 +100,7 @@ def _load_embedding_model_config(
         return None
 
     # Find the .pb model file
-    pb_path = model_dir / f"{model_name}.pb"
+    pb_path = arch_dir / f"{model_name}.pb"
     if not pb_path.exists():
         logger.warning(f"Embedding model file not found: {pb_path}")
         return None

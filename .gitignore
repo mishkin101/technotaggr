@@ -1,5 +1,6 @@
 .DS_Store
 song_data/
+song-data/
 *.pb
 # Byte-compiled / optimized / DLL files
 __pycache__/
