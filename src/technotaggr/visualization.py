@@ -12,7 +12,7 @@ import plotly.graph_objects as go
 from dash import Dash, Input, Output, callback, dcc, html
 from plotly.subplots import make_subplots
 
-from .config import DEFAULT_OUTPUT_DIR
+from technotaggr.config import DEFAULT_OUTPUT_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -745,7 +745,7 @@ def run_dashboard(
     session_file: Path | None = None,
     host: str = "127.0.0.1",
     port: int = 8050,
-    debug: bool = False,
+    debug: bool = True,
 ) -> None:
     """Run the visualization dashboard.
 
@@ -761,5 +761,6 @@ def run_dashboard(
     print(f"   Running at: http://{host}:{port}")
     print(f"   Press Ctrl+C to stop\n")
 
-    app.run(host=host, port=port, debug=debug)
+    app.run(host=host, port=port, debug=True)
+
 
