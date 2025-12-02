@@ -32,9 +32,13 @@ from .model_loader import (
     load_classifier_config,
 )
 from .postprocessing import (
+    AudioPostprocessResult,
+    ModelPostprocessInfo,
+    PostprocessSessionSummary,
     calculate_phrase_duration,
     estimate_bpm,
     postprocess_results,
+    print_postprocess_summary,
 )
 from .result_logger import ResultLogger, SessionResults
 
@@ -66,6 +70,10 @@ __all__ = [
     "estimate_bpm",
     "calculate_phrase_duration",
     "postprocess_results",
+    "print_postprocess_summary",
+    "AudioPostprocessResult",
+    "ModelPostprocessInfo",
+    "PostprocessSessionSummary",
     # CLI
     "main",
 ]

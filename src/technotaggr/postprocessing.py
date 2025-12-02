@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -12,11 +13,48 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+
+@dataclass
+class ModelPostprocessInfo:
+    """Post-processing information for a single model on an audio file."""
+
+    model_name: str
+    embedding_model: str
+    segment_duration_seconds: float
+    num_segments: int
+    segments_per_phrase: float
+    num_phrases: int
+
+
+@dataclass
+class AudioPostprocessResult:
+    """Post-processing result summary for a single audio file."""
+
+    audio_file: str
+    audio_duration_seconds: float
+    bpm: float
+    phrase_duration_seconds: float
+    models: list[ModelPostprocessInfo] = field(default_factory=list)
+
+
+@dataclass
+class PostprocessSessionSummary:
+    """Summary of a post-processing session."""
+
+    total_files: int
+    successful_files: int
+    failed_files: int
+    results: list[AudioPostprocessResult] = field(default_factory=list)
+
+
 # Essentia uses TensorflowInputMusiCNN internally with a base patch_size of 64 = 1 second
 PATCHES_PER_SECOND = 64
 
+# Segment predictions share 50% overlap between consecutive segments
+SEGMENT_OVERLAP = 0.5
 
-def get_embedding_model_segment_duration(embedding_model_path: str) -> float:
+
+def get_embedding_model_segment_duration(embedding_model_path: str) -> float | None:
     """Get the segment duration in seconds from an embedding model's JSON config.
 
     The patch_size from the model's input schema determines the segment duration.
@@ -65,7 +103,7 @@ def get_embedding_model_segment_duration(embedding_model_path: str) -> float:
             logger.warning(f"Unexpected input shape dimensions: {shape}")
             return None
 
-        segment_duration = patch_size / PATCHES_PER_SECOND
+        segment_duration = round(patch_size / PATCHES_PER_SECOND)
         logger.debug(
             f"Embedding model {model_name}: patch_size={patch_size}, "
             f"segment_duration={segment_duration:.3f}s"
@@ -126,7 +164,8 @@ def chunk_predictions(
 
     Args:
         predictions: List of segment predictions (segments x classes).
-        segments_per_phrase: Approximate number of segments per 16-bar phrase.
+        segments_per_phrase: Approximate number of segments per 16-bar phrase,
+            already adjusted to account for segment overlap (via hop duration).
 
     Returns:
         List of chunks, where each chunk is a list of segment predictions.
@@ -191,7 +230,7 @@ def compute_bar_predictions(
 def postprocess_audio_result(
     result: dict[str, Any],
     audio_base_path: Path | None = None,
-) -> dict[str, Any]:
+) -> tuple[dict[str, Any], AudioPostprocessResult | None]:
     """Add 16-bar phrase predictions to a single audio result.
 
     Args:
@@ -199,7 +238,8 @@ def postprocess_audio_result(
         audio_base_path: Base path to resolve relative audio paths.
 
     Returns:
-        Updated result dictionary with BPM and bar predictions.
+        Tuple of (updated result dict, AudioPostprocessResult summary).
+        Summary is None if processing failed.
     """
     audio_file = result["audio_file"]
     audio_path = Path(audio_file)
@@ -210,7 +250,7 @@ def postprocess_audio_result(
 
     if not audio_path.exists():
         logger.warning(f"Audio file not found: {audio_path}")
-        return result
+        return result, None
 
     # Estimate BPM
     bpm = estimate_bpm(audio_path)
@@ -220,12 +260,22 @@ def postprocess_audio_result(
     result["bpm"] = round(bpm, 2)
     result["phrase_duration_seconds"] = round(phrase_duration, 3)
 
+    # Create summary result
+    audio_duration = result["audio_duration_seconds"]
+    summary = AudioPostprocessResult(
+        audio_file=audio_file,
+        audio_duration_seconds=audio_duration,
+        bpm=round(bpm, 2),
+        phrase_duration_seconds=round(phrase_duration, 3),
+    )
+
     # Process each model's predictions
     for model in result.get("models", []):
         num_segments = model.get("num_segments", 0)
         segment_predictions = model.get("segment_predictions", [])
         classes = model.get("classes", [])
         embedding_model_path = model.get("embedding_model_path", "")
+        embedding_model_name = model.get("embedding_model", "")
 
         if num_segments == 0 or not segment_predictions:
             continue
@@ -235,20 +285,30 @@ def postprocess_audio_result(
 
         if segment_duration is None:
             # Fallback: estimate from audio duration / num_segments
-            audio_duration = result["audio_duration_seconds"]
             segment_duration = audio_duration / num_segments
             logger.warning(
                 f"Using fallback segment duration for {model['model_name']}: "
                 f"{segment_duration:.3f}s"
             )
 
-        segments_per_phrase = phrase_duration / segment_duration
+        # --- NEW: account for 50% overlap (hop duration) when computing
+        # segments-per-phrase ---
+        hop_duration = segment_duration * (1.0 - SEGMENT_OVERLAP)
+        if hop_duration <= 0:
+            # Safety fallback: no overlap
+            hop_duration = segment_duration
+
+        if phrase_duration <= segment_duration:
+            segments_per_phrase = 1.0
+        else:
+            segments_per_phrase = (phrase_duration - segment_duration) / hop_duration + 1.0
 
         logger.debug(
             f"Model {model['model_name']}: "
             f"{num_segments} segments, "
-            f"{segment_duration:.3f}s per segment, "
-            f"{segments_per_phrase:.1f} segments per 16-bar phrase"
+            f"{segment_duration:.3f}s segment duration, "
+            f"{hop_duration:.3f}s hop duration, "
+            f"{segments_per_phrase:.2f} segments per 16-bar phrase (effective)"
         )
 
         # Chunk predictions and compute bar predictions
@@ -261,14 +321,38 @@ def postprocess_audio_result(
         model["bar_predictions"] = bar_predictions
         model["aggregated_bar_predictions"] = aggregated_bar_predictions
 
-    return result
+        # --- NEW: Num 16-bar phrases based on audio_length / phrase_duration ---
+        exact_num_phrases = audio_duration / phrase_duration if phrase_duration > 0 else 1.0
+        target_num_phrases = max(1, int(round(exact_num_phrases)))
+
+        if len(bar_predictions) != target_num_phrases:
+            logger.debug(
+                f"Model {model['model_name']}: "
+                f"computed {len(bar_predictions)} phrase chunks from segments, "
+                f"but audio_duration / phrase_duration = {exact_num_phrases:.3f} "
+                f"(rounded -> {target_num_phrases})"
+            )
+
+        # Add model info to summary
+        summary.models.append(
+            ModelPostprocessInfo(
+                model_name=model["model_name"],
+                embedding_model=embedding_model_name,
+                segment_duration_seconds=round(segment_duration, 3),
+                num_segments=num_segments,
+                segments_per_phrase=round(segments_per_phrase, 2),
+                num_phrases=target_num_phrases,
+            )
+        )
+
+    return result, summary
 
 
 def postprocess_results(
     json_path: Path,
     output_path: Path | None = None,
     audio_base_path: Path | None = None,
-) -> Path:
+) -> tuple[Path, PostprocessSessionSummary]:
     """Process a results JSON file to add 16-bar phrase predictions.
 
     Args:
@@ -278,7 +362,7 @@ def postprocess_results(
             If None, uses the current working directory.
 
     Returns:
-        Path to the output JSON file.
+        Tuple of (output path, session summary).
     """
     logger.info(f"Post-processing results from: {json_path}")
 
@@ -294,14 +378,27 @@ def postprocess_results(
     results = data.get("results", [])
     total = len(results)
 
+    # Track session summary
+    session_summary = PostprocessSessionSummary(
+        total_files=total,
+        successful_files=0,
+        failed_files=0,
+    )
+
     for i, result in enumerate(results, 1):
         audio_file = result.get("audio_file", "unknown")
         logger.info(f"[{i}/{total}] Processing: {Path(audio_file).name}")
 
         try:
-            postprocess_audio_result(result, audio_base_path)
+            _, audio_summary = postprocess_audio_result(result, audio_base_path)
+            if audio_summary:
+                session_summary.results.append(audio_summary)
+                session_summary.successful_files += 1
+            else:
+                session_summary.failed_files += 1
         except Exception as e:
             logger.error(f"Failed to post-process {audio_file}: {e}")
+            session_summary.failed_files += 1
 
     # Determine output path
     if output_path is None:
@@ -312,5 +409,48 @@ def postprocess_results(
         json.dump(data, f, indent=2, ensure_ascii=False)
 
     logger.info(f"Post-processed results saved to: {output_path}")
-    return output_path
+    return output_path, session_summary
+
+
+def print_postprocess_summary(summary: PostprocessSessionSummary) -> None:
+    """Print a summary of the post-processing session to the console.
+
+    Args:
+        summary: The session summary to print.
+    """
+    print("\n" + "=" * 70)
+    print("TechnoTaggr Post-Processing Summary")
+    print("=" * 70)
+    print(f"Total files:      {summary.total_files}")
+    print(f"Successful:       {summary.successful_files}")
+    print(f"Failed:           {summary.failed_files}")
+    print("-" * 70)
+
+    for result in summary.results:
+        audio_name = Path(result.audio_file).name
+        print(f"\n  {audio_name}")
+        print(f"    Audio Duration:      {result.audio_duration_seconds:.1f}s")
+        print(f"    BPM:                 {result.bpm:.1f}")
+        print(f"    16-Bar Phrase:       {result.phrase_duration_seconds:.2f}s")
+
+        # Group models by embedding model for cleaner output
+        embedding_groups: dict[str, list[ModelPostprocessInfo]] = {}
+        for model_info in result.models:
+            key = model_info.embedding_model
+            if key not in embedding_groups:
+                embedding_groups[key] = []
+            embedding_groups[key].append(model_info)
+
+        for embedding_name, models in embedding_groups.items():
+            # All models with same embedding have same segment info
+            first_model = models[0]
+            model_names = ", ".join(m.model_name for m in models)
+            print(f"\n    Embedding: {embedding_name}")
+            print(f"      Models:            {model_names}")
+            print(f"      Segment Duration:  {first_model.segment_duration_seconds:.3f}s")
+            print(f"      Num Segments:      {first_model.num_segments}")
+            print(f"      Segments/Phrase:   {first_model.segments_per_phrase:.1f}")
+            print(f"      Num 16-Bar Phrases:{first_model.num_phrases}")
+
+    print("\n" + "=" * 70)
 

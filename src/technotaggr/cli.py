@@ -11,7 +11,7 @@ from .audio import discover_audio_files
 from .config import DEFAULT_MODELS_DIR, DEFAULT_OUTPUT_DIR
 from .inference import InferencePipeline
 from .model_loader import discover_classifiers
-from .postprocessing import postprocess_results
+from .postprocessing import postprocess_results, print_postprocess_summary
 from .result_logger import ResultLogger
 
 
@@ -147,6 +147,12 @@ Examples:
         help="Enable verbose (debug) logging",
     )
 
+    postprocess_parser.add_argument(
+        "--no-summary",
+        action="store_true",
+        help="Don't print summary to console after processing",
+    )
+
     return parser
 
 
@@ -264,13 +270,18 @@ def run_postprocess(args: argparse.Namespace) -> int:
     print("-" * 40)
 
     try:
-        output_path = postprocess_results(
+        output_path, summary = postprocess_results(
             json_path=args.json_file,
             output_path=args.output,
             audio_base_path=args.audio_base_path,
         )
         print("-" * 40)
         print(f"\nResults saved to: {output_path}")
+
+        # Print summary
+        if not args.no_summary:
+            print_postprocess_summary(summary)
+
         return 0
     except Exception as e:
         logger.error(f"Post-processing failed: {e}")

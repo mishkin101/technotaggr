@@ -107,3 +107,6 @@ You should add these results to the json file produced from `results_logger.py`.
 
 
 
+### Output logging and verification:
+
+

@@ -72,15 +72,22 @@ duration = 16 bars * 4 beats per bar * (60 seconds per minute / BPM)
 
 For every model, you will tranaform the initial time segements into the duration for a 16-bar musical phrases and compute the mean probability for each 16 bar phrase. Then, compute the mean probability for the entire audio file, aggregating the mean probabilities from all 16 bar phrases. You should do this for every model and for every audio file.
 
-The audio files must be returned with model predictions added to the comments tag in the audiofile metadata in the following format:
-    - mood tags from the binar classifiers should be aggregatd into one field: "moods: happy, relaxed, etc."
+
+
+The audio files must be returned with model predictions added to the ID3v2 comments (`COMM`, etc.) tag in the audiofile metadata in the following format:
+    - mood classifications from the binar classifiers should be aggregated into one key: "moods: happy, relaxed, etc."
     - fs_loop should use the field "sound_loop" and contain the two highest classes: "sound_loop: bass, chords"
     - Nsynth instrument should use the field instrument and contain the two highest classes: "instrument: guitar, bass"
-    - tonal_atonal should use the field "tonality": "tonality: atonal"
+    - tonal_atonal should use the field `tonality`: `tonality`: atonal"
     - nsynth_reverb should use the field "reverb": "reverb: wet"
     - vocals:
     - MTG-Jamendo should use the field "genre" and contain the two highest classes: "mtg_jamendo: electronic, house""
 
+1. Pick the class with the highet likelyhood from each classifier
+2. For every song, return a list of these classes.
+
+name     comments                              
+funken  happy, relaxed, bass, chords, Rev40, house
 
 # Directory Structure:
 
