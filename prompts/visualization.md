@@ -96,20 +96,13 @@ after running `postprocess` as a CLI command, The JSON file is modified to inclu
 ```
 
 # Role:
-Your role is to understand the code in `src` and the logging structure to implement the visualization logic below. I have installed plotly and dash, so use that library for visualizaiton purposes to create a `Dash` app. I have added relevant documentation for `Dash`in `/Users/mishkin/Desktop/gitclones/technotaggr/prompts/docs/Dash` as reference for how to construct the layout of the app.
+Your role is to understand the code in `src` and the logging structure to implement the visualization logic below. I have installed plotly and dash, so use that library for visualizaiton purposes to create a `Dash` app. I have added relevant documentation for `Dash`in `/Users/mishkin/Desktop/gitclones/technotaggr/prompts/docs/Dash` as reference for how to construct the layout of the app. I should be able to view the dashboard locally by running the CLI command.
 
-Create a CLI command that can process the selected JSON data from `DEFAULT_OUTPUT_DIR`.
+Create a CLI command that can process the JSON data from `DEFAULT_OUTPUT_DIR` with a `--session-file` paramater or visualize the JSON data from the last session run.
 
 - Make a plot for every model and show:
     - generate a `probability` vs`bar_predictions` line plot grouped by every class. 
     - generate a `probability` vs`segment_predictions` line plot grouped by every class.
     - generate a plot that shows the aggregate result across all classes for `bar_predictions`
     - generate a plot that shows the aggregate result across all classes for `segment_predictions`
-
-
-
-
-
-
-
 

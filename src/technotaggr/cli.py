@@ -13,6 +13,7 @@ from .inference import InferencePipeline
 from .model_loader import discover_classifiers
 from .postprocessing import postprocess_results, print_postprocess_summary
 from .result_logger import ResultLogger
+from .visualization import get_latest_session, run_dashboard
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -153,6 +154,56 @@ Examples:
         help="Don't print summary to console after processing",
     )
 
+    # Visualize subcommand
+    visualize_parser = subparsers.add_parser(
+        "visualize",
+        help="Launch interactive dashboard to visualize analysis results",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  technotaggr visualize
+  technotaggr visualize --session-file results_20251201_093052.json
+  technotaggr visualize --port 8080
+        """,
+    )
+
+    visualize_parser.add_argument(
+        "--session-file",
+        "-s",
+        type=Path,
+        default=None,
+        help="Path to a specific session JSON file (default: latest session)",
+    )
+
+    visualize_parser.add_argument(
+        "--host",
+        type=str,
+        default="127.0.0.1",
+        help="Host address to bind to (default: 127.0.0.1)",
+    )
+
+    visualize_parser.add_argument(
+        "--port",
+        "-p",
+        type=int,
+        default=8050,
+        help="Port number for the dashboard (default: 8050)",
+    )
+
+    visualize_parser.add_argument(
+        "--debug",
+        "-d",
+        action="store_true",
+        help="Run dashboard in debug mode (auto-reload on changes)",
+    )
+
+    visualize_parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Enable verbose (debug) logging",
+    )
+
     return parser
 
 
@@ -288,6 +339,58 @@ def run_postprocess(args: argparse.Namespace) -> int:
         return 1
 
 
+def run_visualize(args: argparse.Namespace) -> int:
+    """Run the visualize command.
+
+    Args:
+        args: Parsed command-line arguments.
+
+    Returns:
+        Exit code (0 for success, non-zero for errors).
+    """
+    logger = logging.getLogger(__name__)
+
+    # Determine session file
+    session_file = args.session_file
+
+    if session_file:
+        # Validate provided session file
+        if not session_file.exists():
+            # Try resolving relative to DEFAULT_OUTPUT_DIR
+            resolved = DEFAULT_OUTPUT_DIR / session_file.name
+            if resolved.exists():
+                session_file = resolved
+            else:
+                logger.error(f"Session file does not exist: {session_file}")
+                return 1
+
+        if not session_file.is_file():
+            logger.error(f"Path is not a file: {session_file}")
+            return 1
+    else:
+        # Get latest session
+        session_file = get_latest_session()
+        if not session_file:
+            logger.error(
+                f"No session files found in {DEFAULT_OUTPUT_DIR}. "
+                "Run 'technotaggr analyze' first to generate results."
+            )
+            return 1
+        print(f"Using latest session: {session_file.name}")
+
+    try:
+        run_dashboard(
+            session_file=session_file,
+            host=args.host,
+            port=args.port,
+            debug=args.debug,
+        )
+        return 0
+    except Exception as e:
+        logger.error(f"Dashboard failed: {e}")
+        return 1
+
+
 def run_cli(args: argparse.Namespace) -> int:
     """Run the CLI with parsed arguments.
 
@@ -306,12 +409,15 @@ def run_cli(args: argparse.Namespace) -> int:
         return run_analyze(args)
     elif args.command == "postprocess":
         return run_postprocess(args)
+    elif args.command == "visualize":
+        return run_visualize(args)
     else:
         # No command specified - show help
         print("Usage: technotaggr <command> [options]")
         print("\nCommands:")
         print("  analyze      Analyze audio files and generate predictions")
         print("  postprocess  Add 16-bar phrase predictions to existing results")
+        print("  visualize    Launch interactive visualization dashboard")
         print("\nRun 'technotaggr <command> --help' for more information.")
         return 0
 

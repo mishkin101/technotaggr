@@ -41,6 +41,13 @@ from .postprocessing import (
     print_postprocess_summary,
 )
 from .result_logger import ResultLogger, SessionResults
+from .visualization import (
+    create_dashboard,
+    get_available_sessions,
+    get_latest_session,
+    load_session_data,
+    run_dashboard,
+)
 
 __version__ = "0.1.0"
 
@@ -74,6 +81,12 @@ __all__ = [
     "AudioPostprocessResult",
     "ModelPostprocessInfo",
     "PostprocessSessionSummary",
+    # Visualization
+    "create_dashboard",
+    "run_dashboard",
+    "load_session_data",
+    "get_available_sessions",
+    "get_latest_session",
     # CLI
     "main",
 ]
