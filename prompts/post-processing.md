@@ -22,7 +22,7 @@ The session information is logged in the following structure, and exposes all mo
     "tonal/atonal"
   ]
 ```
-and for each audio file, the following structure is logged into `results` after the sesison informaiton in the same json file:
+and for each audio file, the following structure is logged into `results` after the sesison information in the same json file:
 
 ```json
 "results": [
@@ -70,6 +70,30 @@ and for each audio file, the following structure is logged into `results` after 
     ... //more audio file results
   ]
 ```
+after running `postprocess` as a CLI command, The JSON file is modified to include `bar_predictions` aafter the `segment_predictions` along with the `aggregated_bar_predictions` for every `model` in every audio file as follows:
+
+```json
+        //..end of "aggregated_predictions"
+        "bar_predictions": [
+                    [
+                      0.20208349517163107,
+                      0.09563070404178955,
+                      0.14462723977425518,
+                      0.5524411569623386,
+                      0.005217404543038677
+                    ],
+                    ...,
+        ],
+        "aggregated_bar_predictions": {
+                    "bass": 0.312211227110546,
+                    "chords": 0.10097990340676487,
+                    "fx": 0.1541110559763825,
+                    "melody": 0.4162067808676512,
+                    "percussion": 0.016491033385853584
+                  }
+      ... //more model results
+    ... //more audio file results
+```
 # Role:
 
 Your role is to understand the code in `src` and the logging structure to implement the post-processing logic below.
@@ -107,6 +131,6 @@ You should add these results to the json file produced from `results_logger.py`.
 
 
 
-### Output logging and verification:
+
 
 

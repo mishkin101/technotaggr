@@ -301,6 +301,8 @@ def postprocess_audio_result(
         if phrase_duration <= segment_duration:
             segments_per_phrase = 1.0
         else:
+            # (n-1) * hop_duration + segment_duration = phrase_duration
+            # n = number of segements 
             segments_per_phrase = (phrase_duration - segment_duration) / hop_duration + 1.0
 
         logger.debug(
@@ -308,7 +310,7 @@ def postprocess_audio_result(
             f"{num_segments} segments, "
             f"{segment_duration:.3f}s segment duration, "
             f"{hop_duration:.3f}s hop duration, "
-            f"{segments_per_phrase:.2f} segments per 16-bar phrase (effective)"
+            f"{segments_per_phrase:.2f} segments per 16-bar phrase (effective)" 
         )
 
         # Chunk predictions and compute bar predictions
@@ -322,7 +324,8 @@ def postprocess_audio_result(
         model["aggregated_bar_predictions"] = aggregated_bar_predictions
 
         # --- NEW: Num 16-bar phrases based on audio_length / phrase_duration ---
-        exact_num_phrases = audio_duration / phrase_duration if phrase_duration > 0 else 1.0
+        exact_num_phrases = len(bar_predictions) # we have a smaller chunk at the end for now
+        #audio_duration / phrase_duration if phrase_duration > 0 else 1.0
         target_num_phrases = max(1, int(round(exact_num_phrases)))
 
         if len(bar_predictions) != target_num_phrases:

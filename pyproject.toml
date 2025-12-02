@@ -9,12 +9,14 @@ authors = [
 requires-python = ">=3.10"
 dependencies = [
     "certifi>=2025.11.12",
+    "dash>=3.3.0",
     "essentia-tensorflow>=2.1b6.dev1389",
     "gradio>=6.0.1",
     "ipykernel>=7.1.0",
     "librosa>=0.11.0",
     "mutagen>=1.47.0",
     "notebook>=7.5.0",
+    "plotly>=6.5.0",
 ]
 
 [project.scripts]
