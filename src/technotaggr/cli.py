@@ -13,7 +13,7 @@ from .inference import InferencePipeline
 from .model_loader import discover_classifiers
 from .postprocessing import postprocess_results, print_postprocess_summary
 from .result_logger import ResultLogger
-from .visualization import get_latest_session, run_dashboard
+from .app import get_latest_session, run_dashboard
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -417,7 +417,7 @@ def run_cli(args: argparse.Namespace) -> int:
         print("\nCommands:")
         print("  analyze      Analyze audio files and generate predictions")
         print("  postprocess  Add 16-bar phrase predictions to existing results")
-        print("  visualize    Launch interactive visualization dashboard")
+        print("  visualize    Launch interactive app dashboard")
         print("\nRun 'technotaggr <command> --help' for more information.")
         return 0
 
