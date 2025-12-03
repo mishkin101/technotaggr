@@ -4,6 +4,11 @@ Audio tagging toolkit built on Essentia TensorFlow models. TechnoTaggr scans fol
 
 Here is a demo of the [Dashboard with Ploty](https://24f505ed-de77-41db-9819-40dcb8f4b7d9.plotly.app/)
 
+## In progress Work:
+- post-processing framework and data analysis beyond initial aggregation logic for 16 bar measures common in techno music.
+- curating new techno dataset + finetuning models
+- Adding functionality to add tags into wav, mp3, and .aiff files.
+
 ## What’s inside
 - Prebundled Essentia feature extractors (MusiCNN, Discogs EffNet) and classification heads in `src/technotaggr/models`
 - CLI for batch analysis (`analyze`), 16‑bar phrase aggregation (`postprocess`), and interactive visualization (`visualize`)
