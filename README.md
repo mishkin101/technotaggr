@@ -5,8 +5,10 @@ Audio tagging toolkit built on [Essentia TensorFlow models](https://github.com/M
 Here is a demo of the [Dashboard with Ploty](https://24f505ed-de77-41db-9819-40dcb8f4b7d9.plotly.app/)
 
 ## In progress Work:
-- post-processing framework and data analysis beyond initial aggregation logic for 16 bar measures common in techno music.
-- curating new techno dataset + finetuning models
+### Data Analysis:
+- Data analysis usint initial aggregation logic for 16 bar measures common in techno music. Creating data set of low-level audio features from mel-spectrograms. Establishing baseline reference of accuracy for high-level features from classifiers on curated techno music dataset.
+- Curating new techno dataset + finetuning models
+
 - Adding functionality to add tags into wav, mp3, and .aiff files.
 
 ## What’s inside
