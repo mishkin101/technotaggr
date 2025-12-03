@@ -17,11 +17,11 @@ SRC_DIR = PROJECT_ROOT / "src"
 if SRC_DIR.exists():
     sys.path.insert(0, str(SRC_DIR))
 
-from .visualization import create_dashboard
+from .app import create_dashboard
 
 # Create the Dash app and expose WSGI server for hosting platforms
-app = create_dashboard()
-server = app.server
+app_dash = create_dashboard()
+server = app_dash.server
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app_dash.run(debug=True)

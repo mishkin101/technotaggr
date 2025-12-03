@@ -1,5 +1,19 @@
+This package provides tools for analyzing audio files using pre-trained
+machine learning models for music classification and tagging.
+
+Usage:
+    CLI:
+        technotaggr /path/to/music --output-dir ./results
+
+    Python API:
+        from technotaggr import InferencePipeline, discover_classifiers
+        
+        classifiers = discover_classifiers()
+        pipeline = InferencePipeline(classifiers)
+        result = pipeline.analyze_audio(Path("song.mp3"))
+
 # Basic usage
-technotaggr song_data/smol
+python technotaggr song_data/smol
 
 # With options:
 technotaggr song_data/smol --output-dir ./results -v --recursive
