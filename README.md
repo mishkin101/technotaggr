@@ -1,6 +1,6 @@
 # TechnoTaggr
 
-Audio tagging toolkit built on Essentia TensorFlow models. TechnoTaggr scans folders of audio, runs prepackaged classifiers (mood, tonality, instruments, loops, Jamendo genres, etc.), and saves structured JSON that you can post-process into 16‑bar phrase summaries and explore through a Plotly Dash UI.
+Audio tagging toolkit built on [Essentia TensorFlow models](https://github.com/MTG/essentia?tab=AGPL-3.0-1-ov-file#readme) using the `essentia-tensorflow` package. TechnoTaggr scans folders of audio, runs prepackaged classifiers (mood, tonality, instruments, loops, Jamendo genres, etc.), and saves structured JSON that you can post-process into 16‑bar phrase summaries and explore through a Plotly Dash UI.
 
 Here is a demo of the [Dashboard with Ploty](https://24f505ed-de77-41db-9819-40dcb8f4b7d9.plotly.app/)
 
